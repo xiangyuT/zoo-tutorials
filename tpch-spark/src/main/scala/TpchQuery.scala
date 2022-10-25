@@ -7,6 +7,7 @@ import java.io.File
 import java.io.FileWriter
 import org.apache.spark.sql._
 import scala.collection.mutable.ListBuffer
+import org.apache.hadoop.fs.{FileSystem, Path}
 
 /**
  * Parent class for TPC-H queries.
@@ -102,13 +103,13 @@ object TpchQuery {
       println(s"----------------$queryNum finished--------------------")
     }
 
-    val outFile = new File("TIMES.txt")
-    val bw = new BufferedWriter(new FileWriter(outFile, true))
-
+    val hadoopConfig = sc.getSparkSession().sparkContext.hadoopConfiguration
+    val fs: FileSystem = FileSystem.get(new URI(outputDir), hadoopConfig)
+    val outputStream = fs.create(new Path(outputDir, "TIMES.txt"))
     output.foreach {
-      case (key, value) => bw.write(f"${key}%s\t${value}%1.8f\n")
+      case (key, value) => outputStream.writeBytes(f"${key}%s\t${value}%1.8f\n")
     }
 
-    bw.close()
+    outputStream.close()
   }
 }
